@@ -101,7 +101,7 @@ svg {
   z-index: 30;
   top: 0;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto minmax(410px, 1fr);
+  grid-template-columns: minmax(250px, 1fr) auto minmax(360px, 468px) minmax(150px, auto);
   gap: 20px;
   align-items: center;
   min-height: 78px;
@@ -233,6 +233,102 @@ svg {
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.account-panel {
+  justify-self: end;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.sync-chip,
+.auth-button,
+.user-chip,
+.signout-button {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: rgba(240, 253, 244, 0.07);
+}
+
+.sync-chip,
+.auth-button,
+.user-chip {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  min-width: 0;
+  padding: 7px 10px;
+}
+
+.auth-button {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.auth-button:hover,
+.signout-button:hover {
+  border-color: var(--line-strong);
+  background: rgba(240, 253, 244, 0.12);
+}
+
+.sync-chip i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.42);
+}
+
+.sync-chip strong,
+.auth-button strong,
+.user-chip strong {
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.sync-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #022c22;
+  background: var(--primary-bright);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.user-chip span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.user-chip strong,
+.user-chip em {
+  max-width: 118px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-chip em {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.signout-button {
+  min-height: 44px;
+  margin-left: 6px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .performance-hero {
@@ -1252,6 +1348,61 @@ summary {
   color: var(--text-strong);
 }
 
+.support-panel {
+  overflow: visible;
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.support-card {
+  min-height: 132px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(240, 253, 244, 0.07);
+}
+
+.support-card strong {
+  display: block;
+  margin: 8px 0;
+  color: var(--text-strong);
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.support-card p,
+.sync-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.support-form {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.support-form > div:first-child {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.45fr) minmax(240px, 1fr);
+  gap: 12px;
+}
+
+.support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
 @media (max-width: 1180px) {
   .site-nav,
   .performance-hero,
@@ -1270,6 +1421,11 @@ summary {
     justify-self: stretch;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
+  }
+
+  .account-panel {
+    justify-self: stretch;
+    justify-content: flex-start;
   }
 
   .nav-stats .metric-pill {
@@ -1334,6 +1490,7 @@ summary {
   .goal-grid,
   .routine-education,
   .progress-band,
+  .support-grid,
   .exercise-grid,
   .video-grid,
   .library-grid,
@@ -1342,6 +1499,10 @@ summary {
   .stage-steps,
   .prescription-row,
   .session-notes {
+    grid-template-columns: 1fr;
+  }
+
+  .support-form > div:first-child {
     grid-template-columns: 1fr;
   }
 

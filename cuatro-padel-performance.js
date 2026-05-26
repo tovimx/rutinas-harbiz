@@ -3,6 +3,8 @@ const data = window.CUATRO_PERFORMANCE_DATA || { events: [], workouts: [], stats
 const CONFIG_KEY = "cuatro-padel-performance.config.v1";
 const PROGRESS_KEY = "cuatro-padel-performance.progress.v1";
 const PROFILE_KEY = "cuatro-padel-performance.profile.v1";
+const SYNC_META_KEY = "cuatro-padel-performance.sync.v1";
+const SYNC_DATA_KEYS = new Set([CONFIG_KEY, PROGRESS_KEY, PROFILE_KEY]);
 
 const defaultConfig = {
   startDate: nextMondayValue(),
@@ -20,6 +22,23 @@ const state = {
   profile: { ...defaultProfile, ...readStorage(PROFILE_KEY, {}) },
   config: { ...defaultConfig, ...readStorage(CONFIG_KEY, {}) },
   progress: readStorage(PROGRESS_KEY, {}),
+  syncMeta: readStorage(SYNC_META_KEY, {}),
+  firebase: {
+    configured: false,
+    ready: false,
+    user: null,
+    status: "local",
+    message: "Progreso local",
+    error: "",
+    cloudReady: false,
+    applyingCloud: false,
+    lastSavedAt: "",
+  },
+  support: {
+    sending: false,
+    message: "",
+    status: "",
+  },
   view: "plan",
   selectedWeek: 0,
   selectedSessionId: "",
@@ -44,6 +63,7 @@ const els = {
   sourceStrip: document.querySelector("#archivo"),
   printButton: document.querySelector("#printButton"),
   beginOnboardingButton: document.querySelector("#beginOnboardingButton"),
+  accountPanel: document.querySelector("#accountPanel"),
   viewTabs: document.querySelectorAll(".tab-button"),
 };
 
@@ -155,6 +175,84 @@ function readStorage(key, fallback) {
 
 function writeStorage(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+  if (SYNC_DATA_KEYS.has(key) && state && !state.firebase.applyingCloud) {
+    state.syncMeta = { updatedAt: new Date().toISOString() };
+    localStorage.setItem(SYNC_META_KEY, JSON.stringify(state.syncMeta));
+    queueCloudSave();
+  }
+}
+
+function persistCloudStateLocally() {
+  state.firebase.applyingCloud = true;
+  writeStorage(PROFILE_KEY, state.profile);
+  writeStorage(CONFIG_KEY, state.config);
+  writeStorage(PROGRESS_KEY, state.progress);
+  localStorage.setItem(SYNC_META_KEY, JSON.stringify(state.syncMeta));
+  state.firebase.applyingCloud = false;
+}
+
+function localExperienceExists() {
+  return Boolean(
+    state.profile.name ||
+      state.profile.planStarted ||
+      state.profile.introStarted ||
+      Object.keys(state.progress || {}).length
+  );
+}
+
+function exportCloudState() {
+  return {
+    profile: state.profile,
+    config: state.config,
+    progress: state.progress,
+    localUpdatedAt: state.syncMeta.updatedAt || "",
+  };
+}
+
+function applyCloudState(cloudState) {
+  if (!cloudState) return;
+  state.profile = { ...defaultProfile, ...(cloudState.profile || {}) };
+  state.config = { ...defaultConfig, ...(cloudState.config || {}) };
+  state.progress = cloudState.progress || {};
+  state.syncMeta = { updatedAt: cloudState.updatedAt || cloudState.localUpdatedAt || new Date().toISOString() };
+  persistCloudStateLocally();
+  plan = buildPlan();
+  ensureSelection();
+  render();
+}
+
+let cloudSaveTimer = null;
+
+function queueCloudSave(immediate = false) {
+  const service = window.CuatroFirebase;
+  if (!service || !state.firebase.user || state.firebase.applyingCloud) return;
+  if (!state.firebase.cloudReady && !immediate) return;
+
+  clearTimeout(cloudSaveTimer);
+  state.firebase.status = "syncing";
+  state.firebase.message = "Sincronizando";
+  renderAccountPanel();
+
+  cloudSaveTimer = setTimeout(saveCloudState, immediate ? 0 : 600);
+}
+
+async function saveCloudState() {
+  const service = window.CuatroFirebase;
+  if (!service || !state.firebase.user) return;
+
+  try {
+    await service.saveState(exportCloudState());
+    state.firebase.status = "synced";
+    state.firebase.message = "Sincronizado";
+    state.firebase.error = "";
+    state.firebase.lastSavedAt = new Date().toISOString();
+  } catch (error) {
+    state.firebase.status = "error";
+    state.firebase.message = "No se pudo sincronizar";
+    state.firebase.error = error.message || "Error al guardar en Firebase.";
+  }
+
+  renderAccountPanel();
 }
 
 function nextMondayValue() {
@@ -496,6 +594,56 @@ function renderStats() {
     <span class="metric-pill"><strong>${plan.weeks.length}</strong><em>semanas</em></span>
     <span class="metric-pill"><strong>${uniqueExercises.length}</strong><em>ejercicios</em></span>
     <span class="metric-pill"><strong>${uniqueVideos.length}</strong><em>videos</em></span>
+  `;
+}
+
+function renderAccountPanel() {
+  if (!els.accountPanel) return;
+  const firebase = state.firebase;
+  const user = firebase.user;
+  const initials = user?.displayName
+    ? user.displayName.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
+    : "4P";
+
+  if (!firebase.configured) {
+    els.accountPanel.innerHTML = `
+      <span class="sync-chip is-local">
+        <i></i>
+        <strong>Local</strong>
+      </span>
+    `;
+    return;
+  }
+
+  if (!firebase.ready) {
+    els.accountPanel.innerHTML = `
+      <span class="sync-chip is-loading">
+        <i></i>
+        <strong>Conectando</strong>
+      </span>
+    `;
+    return;
+  }
+
+  if (!user) {
+    els.accountPanel.innerHTML = `
+      <button class="auth-button" type="button" data-auth-sign-in>
+        <span class="sync-avatar">G</span>
+        <strong>Guardar progreso</strong>
+      </button>
+    `;
+    return;
+  }
+
+  els.accountPanel.innerHTML = `
+    <div class="user-chip" title="${escapeHtml(user.email || user.displayName || "Cuenta conectada")}">
+      <span class="sync-avatar">${escapeHtml(initials)}</span>
+      <span>
+        <strong>${escapeHtml(user.displayName || user.email || "Cuenta")}</strong>
+        <em>${escapeHtml(firebase.message || "Sincronizado")}</em>
+      </span>
+    </div>
+    <button class="signout-button" type="button" data-auth-sign-out aria-label="Cerrar sesion">Salir</button>
   `;
 }
 
@@ -1086,6 +1234,84 @@ function renderArchiveView() {
   `;
 }
 
+function renderSupportView() {
+  const user = state.firebase.user;
+  const configured = state.firebase.configured;
+  const selected = currentSession();
+  const statusMessage = state.support.status || state.firebase.error || "";
+
+  els.contentArea.innerHTML = `
+    <section class="session-panel support-panel">
+      <header class="session-header">
+        <div>
+          <span class="section-label">Soporte</span>
+          <h2>Seguimiento para jugadores</h2>
+          <div class="session-meta">
+            <span>${configured ? "Firebase activo" : "Modo local"}</span>
+            <span>${user ? "Cuenta conectada" : "Sin cuenta"}</span>
+          </div>
+        </div>
+        <div class="session-actions">
+          ${configured && !user ? `<button class="primary-action" type="button" data-auth-sign-in>Iniciar con Google</button>` : ""}
+        </div>
+      </header>
+
+      <div class="support-grid">
+        <article class="support-card">
+          <span class="section-label">Cuenta</span>
+          <strong>${user ? escapeHtml(user.displayName || user.email || "Cuenta conectada") : "Progreso local"}</strong>
+          <p>${user ? "Tu plan, notas y rutinas completadas se sincronizan con tu cuenta." : "Puedes usar la app sin cuenta; inicia sesion para guardar progreso y enviar soporte."}</p>
+        </article>
+
+        <article class="support-card">
+          <span class="section-label">Estado</span>
+          <strong>${escapeHtml(state.firebase.message || "Listo")}</strong>
+          <p>${configured ? "El progreso se guarda por usuario bajo tu sesion de Google." : "Firebase se activa automaticamente en el despliegue configurado."}</p>
+        </article>
+      </div>
+
+      <form class="support-form" data-support-form>
+        <div>
+          <label>
+            <span class="field-label">Tema</span>
+            <select class="date-input" name="topic" ${!configured || !user ? "disabled" : ""}>
+              <option value="rutina">Rutina o ejercicio</option>
+              <option value="dolor">Molestia o dolor</option>
+              <option value="progreso">Progreso o calendario</option>
+              <option value="cuenta">Cuenta o sincronizacion</option>
+              <option value="otro">Otro</option>
+            </select>
+          </label>
+
+          <label>
+            <span class="field-label">Rutina relacionada</span>
+            <select class="date-input" name="sessionId" ${!configured || !user ? "disabled" : ""}>
+              <option value="">General</option>
+              ${plan.sessions.map((session) => `
+                <option value="${escapeHtml(session.id)}" ${selected?.id === session.id ? "selected" : ""}>
+                  Sesion ${session.number} - ${escapeHtml(session.workout.title)}
+                </option>
+              `).join("")}
+            </select>
+          </label>
+        </div>
+
+        <label>
+          <span class="field-label">Mensaje</span>
+          <textarea class="note-input" name="message" placeholder="Describe que paso, en que ejercicio, sensaciones y que necesitas revisar." ${!configured || !user ? "disabled" : ""}>${escapeHtml(state.support.message || "")}</textarea>
+        </label>
+
+        <div class="support-actions">
+          <button class="primary-action" type="submit" ${!configured || !user || state.support.sending ? "disabled" : ""}>
+            ${state.support.sending ? "Enviando" : "Enviar soporte"}
+          </button>
+          ${statusMessage ? `<p class="sync-message">${escapeHtml(statusMessage)}</p>` : ""}
+        </div>
+      </form>
+    </section>
+  `;
+}
+
 function renderEmpty(title = "Sin resultados", message = "No hay elementos que coincidan con la busqueda y el filtro seleccionado.") {
   return `
     <div class="empty-state">
@@ -1102,6 +1328,7 @@ function renderContent() {
   }
   if (state.view === "library") renderLibraryView();
   else if (state.view === "videos") renderVideosView();
+  else if (state.view === "support") renderSupportView();
   else if (state.view === "archive") renderArchiveView();
   else renderPlanView();
 }
@@ -1136,6 +1363,7 @@ function syncAppVisibility() {
 function render() {
   ensureSelection();
   renderStats();
+  renderAccountPanel();
   renderPlanner();
   syncAppVisibility();
   if (!isPlanReady()) return;
@@ -1269,6 +1497,126 @@ function moveStage(sessionId, direction) {
   render();
 }
 
+function handleFirebaseStatus(event) {
+  const status = event.detail?.status || {};
+  state.firebase.configured = Boolean(status.configured);
+  state.firebase.ready = Boolean(status.ready);
+  state.firebase.message = status.message || state.firebase.message;
+  state.firebase.error = status.error || "";
+  renderAccountPanel();
+  if (state.view === "support") renderContent();
+}
+
+function handleFirebaseAuth(event) {
+  state.firebase.user = event.detail?.user || null;
+  state.firebase.configured = Boolean(event.detail?.status?.configured ?? state.firebase.configured);
+  state.firebase.ready = true;
+  state.firebase.cloudReady = false;
+  state.firebase.status = state.firebase.user ? "loading" : "local";
+  state.firebase.message = state.firebase.user ? "Cargando progreso" : "Progreso local";
+  renderAccountPanel();
+  if (state.view === "support") renderContent();
+}
+
+function handleFirebaseCloudState(event) {
+  if (!state.firebase.user) return;
+  const exists = Boolean(event.detail?.exists);
+  const cloudState = event.detail?.data || null;
+  state.firebase.cloudReady = true;
+
+  if (!exists) {
+    state.firebase.message = "Preparando sincronizacion";
+    queueCloudSave(true);
+    return;
+  }
+
+  const cloudUpdatedAt = cloudState.updatedAt || cloudState.localUpdatedAt || "";
+  const localUpdatedAt = state.syncMeta.updatedAt || "";
+  if (!localExperienceExists() || (cloudUpdatedAt && (!localUpdatedAt || cloudUpdatedAt > localUpdatedAt))) {
+    state.firebase.message = "Sincronizado";
+    state.firebase.status = "synced";
+    applyCloudState(cloudState);
+    return;
+  }
+
+  if (localUpdatedAt && (!cloudUpdatedAt || localUpdatedAt > cloudUpdatedAt)) {
+    queueCloudSave(true);
+    return;
+  }
+
+  state.firebase.status = "synced";
+  state.firebase.message = "Sincronizado";
+  renderAccountPanel();
+}
+
+function handleFirebaseError(event) {
+  state.firebase.status = "error";
+  state.firebase.message = "Firebase requiere atencion";
+  state.firebase.error = event.detail?.message || "No se pudo completar la operacion.";
+  renderAccountPanel();
+  if (state.view === "support") renderContent();
+}
+
+async function signInWithFirebase() {
+  try {
+    state.firebase.message = "Abriendo Google";
+    renderAccountPanel();
+    await window.CuatroFirebase?.signIn();
+  } catch (error) {
+    state.firebase.error = error.message || "No se pudo iniciar sesion.";
+    state.firebase.message = "No se pudo iniciar sesion";
+    renderAccountPanel();
+  }
+}
+
+async function signOutFromFirebase() {
+  try {
+    await window.CuatroFirebase?.signOut();
+  } catch (error) {
+    state.firebase.error = error.message || "No se pudo cerrar sesion.";
+    renderAccountPanel();
+  }
+}
+
+async function submitSupportRequest(form) {
+  const message = clean(new FormData(form).get("message"));
+  if (!message) return;
+
+  const formData = new FormData(form);
+  const sessionId = clean(formData.get("sessionId"));
+  const session = plan.sessions.find((item) => item.id === sessionId);
+  state.support.sending = true;
+  state.support.status = "";
+  state.support.message = message;
+  renderSupportView();
+
+  try {
+    const ticketId = await window.CuatroFirebase.createSupportTicket({
+      topic: clean(formData.get("topic")) || "rutina",
+      message,
+      sessionId,
+      sessionTitle: session?.workout?.title || "",
+      sessionNumber: session?.number || "",
+      selectedWeek: state.selectedWeek,
+      profile: state.profile,
+      config: state.config,
+      progressSummary: {
+        completed: plan.completedCount,
+        total: plan.sessions.length,
+      },
+      page: window.location.href,
+      userAgent: navigator.userAgent,
+    });
+    state.support.status = `Solicitud enviada: ${ticketId}`;
+    state.support.message = "";
+  } catch (error) {
+    state.support.status = error.message || "No se pudo enviar la solicitud.";
+  }
+
+  state.support.sending = false;
+  renderSupportView();
+}
+
 els.appStepPanel.addEventListener("submit", (event) => {
   const form = event.target.closest("[data-name-form]");
   if (!form) return;
@@ -1386,6 +1734,34 @@ els.viewTabs.forEach((button) => {
     render();
   });
 });
+
+els.accountPanel.addEventListener("click", (event) => {
+  if (event.target.closest("[data-auth-sign-in]")) {
+    signInWithFirebase();
+    return;
+  }
+  if (event.target.closest("[data-auth-sign-out]")) {
+    signOutFromFirebase();
+  }
+});
+
+els.contentArea.addEventListener("click", (event) => {
+  if (event.target.closest("[data-auth-sign-in]")) {
+    signInWithFirebase();
+  }
+});
+
+els.contentArea.addEventListener("submit", (event) => {
+  const form = event.target.closest("[data-support-form]");
+  if (!form) return;
+  event.preventDefault();
+  submitSupportRequest(form);
+});
+
+window.addEventListener("cuatro:firebase-status", handleFirebaseStatus);
+window.addEventListener("cuatro:firebase-auth", handleFirebaseAuth);
+window.addEventListener("cuatro:firebase-cloud-state", handleFirebaseCloudState);
+window.addEventListener("cuatro:firebase-error", handleFirebaseError);
 
 els.beginOnboardingButton.addEventListener("click", () => {
   if (!state.profile.name) {
