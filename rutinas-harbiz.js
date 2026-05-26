@@ -2,6 +2,7 @@ const data = window.HARBIZ_RUTINAS_DATA || { events: [], workouts: [], stats: {}
 
 const CONFIG_KEY = "cuatro-padel-performance.config.v1";
 const PROGRESS_KEY = "cuatro-padel-performance.progress.v1";
+const PROFILE_KEY = "cuatro-padel-performance.profile.v1";
 
 const defaultConfig = {
   startDate: nextMondayValue(),
@@ -9,28 +10,37 @@ const defaultConfig = {
   goal: "padel",
 };
 
+const defaultProfile = {
+  name: "",
+  planStarted: false,
+};
+
 const state = {
+  profile: { ...defaultProfile, ...readStorage(PROFILE_KEY, {}) },
   config: { ...defaultConfig, ...readStorage(CONFIG_KEY, {}) },
   progress: readStorage(PROGRESS_KEY, {}),
   view: "plan",
   selectedWeek: 0,
   selectedSessionId: "",
+  sessionMode: "preview",
+  activeStageIndex: 0,
   query: "",
   block: "all",
 };
 
 const els = {
   statsPanel: document.querySelector("#statsPanel"),
-  startDateInput: document.querySelector("#startDateInput"),
-  frequencyControl: document.querySelector("#frequencyControl"),
-  goalControl: document.querySelector("#goalControl"),
-  planDurationLabel: document.querySelector("#planDurationLabel"),
-  plannerSummary: document.querySelector("#plannerSummary"),
+  appStepPanel: document.querySelector("#appStepPanel"),
+  dashboardBoard: document.querySelector("#dashboard"),
   progressBand: document.querySelector("#progressBand"),
   weekRail: document.querySelector("#weekRail"),
+  calendarSummary: document.querySelector("#calendarSummary"),
+  controlDock: document.querySelector("#biblioteca"),
+  filterBand: document.querySelector(".filter-band"),
   searchInput: document.querySelector("#searchInput"),
   blockFilters: document.querySelector("#blockFilters"),
   contentArea: document.querySelector("#sesion"),
+  sourceStrip: document.querySelector("#archivo"),
   printButton: document.querySelector("#printButton"),
   resetProgressButton: document.querySelector("#resetProgressButton"),
   viewTabs: document.querySelectorAll(".tab-button"),
@@ -491,19 +501,68 @@ function renderStats() {
 function renderPlanner() {
   const duration = plan.weeks.length;
   const goal = goalProfiles[state.config.goal] || goalProfiles.padel;
-  els.startDateInput.value = state.config.startDate;
-  els.planDurationLabel.textContent = `${duration} semanas`;
-  els.frequencyControl.querySelectorAll("button").forEach((button) => {
-    button.classList.toggle("is-active", Number(button.dataset.frequency) === Number(state.config.frequency));
-  });
-  els.goalControl.querySelectorAll("button").forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.goal === state.config.goal);
-  });
-  els.plannerSummary.innerHTML = `
-    <div class="summary-row"><span>Inicio</span><strong>${escapeHtml(formatLongDate(plan.start))}</strong></div>
-    <div class="summary-row"><span>Frecuencia</span><strong>${state.config.frequency} sesiones/semana</strong></div>
-    <div class="summary-row"><span>Enfoque</span><strong>${escapeHtml(goal.label)}</strong></div>
-    <div class="summary-row"><span>Guia</span><strong>${escapeHtml(goal.cue)}</strong></div>
+
+  if (!state.profile.name) {
+    els.appStepPanel.innerHTML = `
+      <form class="onboarding-form" data-name-form>
+        <div class="panel-heading">
+          <span>Paso 1</span>
+          <strong>Bienvenido</strong>
+        </div>
+        <div>
+          <h2>Primero, como te llamas?</h2>
+          <p>Guardamos tu nombre solo en este navegador para personalizar el plan y el progreso.</p>
+        </div>
+        <label>
+          <span class="field-label">Nombre</span>
+          <input class="date-input" name="athleteName" autocomplete="name" placeholder="Tu nombre" required>
+        </label>
+        <button class="primary-action" type="submit">Continuar</button>
+      </form>
+    `;
+    return;
+  }
+
+  els.appStepPanel.innerHTML = `
+    <div class="panel-heading">
+      <span>${state.profile.planStarted ? "Plan activo" : "Paso 2"}</span>
+      <strong>${duration} semanas</strong>
+    </div>
+    <div class="profile-strip">
+      <div>
+        <span class="field-label">Jugador</span>
+        <strong>${escapeHtml(state.profile.name)}</strong>
+      </div>
+      <button class="secondary-action" type="button" data-edit-name>Editar</button>
+    </div>
+
+    <label class="field-label" for="startDateInput">Fecha de inicio</label>
+    <input id="startDateInput" class="date-input" type="date" value="${escapeHtml(state.config.startDate)}">
+
+    <div class="field-label">Entrenamientos por semana</div>
+    <div class="segmented-control" id="frequencyControl" role="radiogroup" aria-label="Entrenamientos por semana">
+      ${[2, 3, 4].map((frequency) => `
+        <button type="button" data-frequency="${frequency}" class="${Number(state.config.frequency) === frequency ? "is-active" : ""}">${frequency}</button>
+      `).join("")}
+    </div>
+
+    <div class="field-label">Enfoque</div>
+    <div class="goal-grid" id="goalControl" role="radiogroup" aria-label="Enfoque del plan">
+      ${Object.entries(goalProfiles).map(([key, profile]) => `
+        <button type="button" data-goal="${escapeHtml(key)}" class="${state.config.goal === key ? "is-active" : ""}">${escapeHtml(profile.label)}</button>
+      `).join("")}
+    </div>
+
+    <div class="planner-summary">
+      <div class="summary-row"><span>Inicio</span><strong>${escapeHtml(formatLongDate(plan.start))}</strong></div>
+      <div class="summary-row"><span>Frecuencia</span><strong>${state.config.frequency} sesiones/semana</strong></div>
+      <div class="summary-row"><span>Enfoque</span><strong>${escapeHtml(goal.label)}</strong></div>
+      <div class="summary-row"><span>Guia</span><strong>${escapeHtml(goal.cue)}</strong></div>
+    </div>
+
+    <button class="primary-action setup-submit" type="button" data-start-plan>
+      ${state.profile.planStarted ? "Actualizar calendario" : "Crear mi calendario"}
+    </button>
   `;
 }
 
@@ -512,6 +571,7 @@ function renderProgress() {
   const completed = plan.completedCount;
   const current = currentSession();
   const percent = total ? Math.round((completed / total) * 100) : 0;
+  els.calendarSummary.textContent = `${state.profile.name}, selecciona una rutina para ver su preview antes de comenzar.`;
   els.progressBand.innerHTML = `
     <div class="progress-item"><span>Completadas</span><strong>${completed}</strong></div>
     <div class="progress-item"><span>Restantes</span><strong>${Math.max(total - completed, 0)}</strong></div>
@@ -527,13 +587,29 @@ function renderWeekRail() {
   els.weekRail.innerHTML = plan.weeks.map((week) => {
     const completed = week.sessions.filter((session) => state.progress[session.id]?.completed).length;
     return `
-      <button class="week-button ${week.index === state.selectedWeek ? "is-active" : ""}" type="button" data-week="${week.index}">
-        <span>${escapeHtml(week.range)}</span>
-        <strong>${escapeHtml(week.title)}</strong>
-        <span>${completed}/${week.sessions.length} sesiones completas</span>
-      </button>
+      <article class="calendar-week ${week.index === state.selectedWeek ? "is-active" : ""}">
+        <button class="week-button" type="button" data-week="${week.index}">
+          <span>${escapeHtml(week.range)}</span>
+          <strong>${escapeHtml(week.title)}</strong>
+          <span>${completed}/${week.sessions.length} sesiones completas</span>
+        </button>
+        <div class="calendar-sessions">
+          ${week.sessions.map((session) => calendarSessionButton(session)).join("")}
+        </div>
+      </article>
     `;
   }).join("");
+}
+
+function calendarSessionButton(session) {
+  const progress = state.progress[session.id] || {};
+  return `
+    <button class="calendar-session ${session.id === state.selectedSessionId ? "is-current" : ""} ${progress.completed ? "is-complete" : ""}" type="button" data-preview-session="${escapeHtml(session.id)}">
+      <span>${escapeHtml(formatDate(session.scheduledDate))}</span>
+      <strong>${escapeHtml(session.workout.title.replace(" (RODILLA)", ""))}</strong>
+      <em>${progress.completed ? "Completa" : "Comenzar"}</em>
+    </button>
+  `;
 }
 
 function renderBlockFilters() {
@@ -552,6 +628,45 @@ function getFilterSourceExercises() {
   return session?.workout?.exercises?.map((exercise) => ({ ...exercise, workout: session.workout })) || [];
 }
 
+function stagesForSession(session) {
+  const workout = session.workout;
+  const blocks = workout.blocks?.length
+    ? workout.blocks
+    : Array.from(new Set((workout.exercises || []).map((exercise) => exercise.block).filter(Boolean))).map((name) => ({ name, description: "" }));
+
+  return blocks.map((block, index) => {
+    const exercises = (workout.exercises || [])
+      .filter((exercise) => exercise.block === block.name)
+      .map((exercise) => ({ ...exercise, workout }));
+    return {
+      rawName: block.name || `Etapa ${index + 1}`,
+      name: stageName(block.name || `Etapa ${index + 1}`, index),
+      description: stageDescription(block.name || "", block.description || ""),
+      exercises,
+    };
+  }).filter((stage) => stage.exercises.length);
+}
+
+function stageName(name, index) {
+  const text = normalize(name);
+  if (/movilidad|mobility|warm/.test(text)) return "Movilidad";
+  if (/prep|activation|activacion|prepar/.test(text)) return "Preparacion";
+  if (/jump|bound|saltar|lanzar|throw|power|potencia/.test(text)) return "Saltar y lanzar";
+  if (/lift|principal|strength|fuerza/.test(text)) return "Lift principal";
+  if (/accessory|accesorio|core|finisher|esd|conditioning/.test(text)) return "Accesorios";
+  return `Etapa ${index + 1}`;
+}
+
+function stageDescription(name, fallback) {
+  const text = normalize(`${name} ${fallback}`);
+  if (/movilidad|mobility/.test(text)) return "Abre rango de movimiento y prepara cadera, tobillo, columna y hombro antes de cargar.";
+  if (/prep|activation|activacion|prepar/.test(text)) return "Activa patrones clave para llegar al bloque fuerte con control y buena postura.";
+  if (/jump|bound|saltar|lanzar|throw|power|potencia/.test(text)) return "Convierte fuerza en reactividad: saltos, aterrizajes y lanzamientos con intencion.";
+  if (/lift|principal|strength|fuerza/.test(text)) return "Bloque principal de fuerza. Prioriza tecnica, descanso y repeticiones solidas.";
+  if (/accessory|accesorio|core|finisher|esd|conditioning/.test(text)) return "Trabajo complementario para core, resistencia especifica y tolerancia a puntos largos.";
+  return fallback || "Avanza con control, respira bien y conserva tecnica limpia.";
+}
+
 function renderPlanView() {
   const week = currentWeek();
   const session = currentSession();
@@ -564,7 +679,7 @@ function renderPlanView() {
     <section class="plan-list" aria-label="Sesiones de la semana">
       ${week.sessions.map(planCard).join("")}
     </section>
-    ${renderSession(session)}
+    ${state.sessionMode === "workout" ? renderGuidedSession(session) : renderSessionPreview(session)}
     ${week.accessories.length ? renderAccessories(week.accessories) : ""}
   `;
 
@@ -578,7 +693,122 @@ function planCard(session) {
       <span>${escapeHtml(formatDate(session.scheduledDate))} - Sesion ${session.number}</span>
       <h3>${escapeHtml(session.workout.title)}</h3>
       <p class="card-meta">${escapeHtml(session.phase.name)} - ${session.workout.exercises.length} ejercicios</p>
-      <button class="secondary-action" type="button" data-session="${escapeHtml(session.id)}">Abrir sesion</button>
+      <button class="secondary-action" type="button" data-session="${escapeHtml(session.id)}">Comenzar</button>
+    </article>
+  `;
+}
+
+function renderSessionPreview(session) {
+  const workout = session.workout;
+  const insights = routineInsight(workout, session);
+  const stages = stagesForSession(session);
+  const progress = state.progress[session.id] || {};
+  return `
+    <article class="session-panel session-preview">
+      <header class="session-header">
+        <div>
+          <span class="section-label">Preview de rutina - ${escapeHtml(formatLongDate(session.scheduledDate))}</span>
+          <h2>${escapeHtml(workout.title)}</h2>
+          <div class="session-meta">
+            <span>${escapeHtml(session.phase.name)}</span>
+            <span>${workout.exercises.length} ejercicios</span>
+            <span>${stages.length} etapas</span>
+            <span>${progress.completed ? "Completada" : "Pendiente"}</span>
+          </div>
+        </div>
+        <div class="session-actions">
+          <button class="primary-action" type="button" data-start-session="${escapeHtml(session.id)}">Comenzar rutina</button>
+        </div>
+      </header>
+
+      <section class="routine-education" aria-label="Informacion didactica de la rutina">
+        ${insights.map((item) => `
+          <div class="insight-card">
+            <span>${escapeHtml(item.label)}</span>
+            <strong>${escapeHtml(item.value)}</strong>
+          </div>
+        `).join("")}
+      </section>
+
+      <p class="routine-note">${escapeHtml(workout.description || session.phase.intent)}</p>
+
+      <section class="stage-preview-list" aria-label="Etapas de la rutina">
+        ${stages.map((stage, index) => `
+          <button class="stage-preview ${index === 0 ? "is-current" : ""}" type="button" data-stage-preview="${index}">
+            <span>Etapa ${index + 1}</span>
+            <strong>${escapeHtml(stage.name)}</strong>
+            <em>${stage.exercises.length} ejercicios</em>
+          </button>
+        `).join("")}
+      </section>
+    </article>
+  `;
+}
+
+function renderGuidedSession(session) {
+  const workout = session.workout;
+  const stages = stagesForSession(session);
+  const progress = state.progress[session.id] || {};
+  const savedIndex = Number.isInteger(progress.stageIndex) ? progress.stageIndex : state.activeStageIndex || 0;
+  const activeIndex = Math.min(savedIndex, Math.max(stages.length - 1, 0));
+  const stage = stages[activeIndex] || stages[0];
+  const percent = stages.length ? Math.round(((activeIndex + 1) / stages.length) * 100) : 0;
+
+  return `
+    <article class="session-panel guided-session">
+      <header class="session-header">
+        <div>
+          <span class="section-label">Rutina guiada - Etapa ${activeIndex + 1} de ${stages.length}</span>
+          <h2>${escapeHtml(workout.title)}</h2>
+          <div class="session-meta">
+            <span>${escapeHtml(stage?.name || "Etapa")}</span>
+            <span>${stage?.exercises.length || 0} ejercicios</span>
+            <span>${percent}% de la rutina</span>
+          </div>
+        </div>
+        <div class="session-actions">
+          <button class="secondary-action" type="button" data-back-preview="${escapeHtml(session.id)}">Ver preview</button>
+          <button class="complete-button ${progress.completed ? "is-complete" : ""}" type="button" data-complete="${escapeHtml(session.id)}">
+            ${progress.completed ? "Completada" : "Finalizar rutina"}
+          </button>
+        </div>
+      </header>
+
+      <section class="stage-tracker" aria-label="Progreso por etapas">
+        <div class="meter-track"><div class="meter-fill" style="width:${percent}%"></div></div>
+        <div class="stage-steps">
+          ${stages.map((item, index) => `
+            <button class="stage-step ${index === activeIndex ? "is-current" : ""} ${index < activeIndex || progress.completed ? "is-done" : ""}" type="button" data-jump-stage="${index}">
+              <span>${index + 1}</span>
+              <strong>${escapeHtml(item.name)}</strong>
+            </button>
+          `).join("")}
+        </div>
+      </section>
+
+      <section class="routine-note stage-focus">
+        <span class="section-label">Foco de esta etapa</span>
+        <p>${escapeHtml(stage?.description || "Manten tecnica limpia y avanza sin dolor.")}</p>
+      </section>
+
+      ${renderSessionNotes(session, progress)}
+
+      <section class="exercise-section">
+        <div class="section-title">
+          <span>${escapeHtml(stage?.name || "Etapa")}</span>
+          <i></i>
+        </div>
+        <div class="exercise-grid">
+          ${(stage?.exercises || []).map(exerciseCard).join("")}
+        </div>
+      </section>
+
+      <footer class="stage-controls">
+        <button class="secondary-action" type="button" data-prev-stage="${escapeHtml(session.id)}" ${activeIndex === 0 ? "disabled" : ""}>Etapa anterior</button>
+        <button class="primary-action" type="button" data-next-stage="${escapeHtml(session.id)}">
+          ${activeIndex >= stages.length - 1 ? "Finalizar rutina" : "Siguiente etapa"}
+        </button>
+      </footer>
     </article>
   `;
 }
@@ -860,6 +1090,10 @@ function renderEmpty(title = "Sin resultados", message = "No hay elementos que c
 }
 
 function renderContent() {
+  if (!isPlanReady()) {
+    els.contentArea.innerHTML = "";
+    return;
+  }
   if (state.view === "library") renderLibraryView();
   else if (state.view === "videos") renderVideosView();
   else if (state.view === "archive") renderArchiveView();
@@ -879,10 +1113,23 @@ function rebuildPlan() {
   render();
 }
 
+function isPlanReady() {
+  return Boolean(state.profile.name && state.profile.planStarted);
+}
+
+function syncAppVisibility() {
+  const ready = isPlanReady();
+  [els.dashboardBoard, els.controlDock, els.filterBand, els.contentArea, els.sourceStrip].forEach((element) => {
+    if (element) element.hidden = !ready;
+  });
+}
+
 function render() {
   ensureSelection();
   renderStats();
   renderPlanner();
+  syncAppVisibility();
+  if (!isPlanReady()) return;
   renderProgress();
   renderWeekRail();
   renderBlockFilters();
@@ -895,9 +1142,63 @@ function bindDynamicControls() {
     button.addEventListener("click", () => {
       state.selectedSessionId = button.dataset.session;
       state.view = "plan";
+      state.sessionMode = "preview";
+      state.activeStageIndex = 0;
       render();
       document.querySelector("#sesion").scrollIntoView({ block: "start" });
     });
+  });
+
+  els.contentArea.querySelectorAll("[data-start-session]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const sessionId = button.dataset.startSession;
+      state.selectedSessionId = sessionId;
+      state.view = "plan";
+      state.sessionMode = "workout";
+      state.activeStageIndex = state.progress[sessionId]?.stageIndex || 0;
+      render();
+      document.querySelector("#sesion").scrollIntoView({ block: "start" });
+    });
+  });
+
+  els.contentArea.querySelectorAll("[data-back-preview]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedSessionId = button.dataset.backPreview;
+      state.sessionMode = "preview";
+      render();
+    });
+  });
+
+  els.contentArea.querySelectorAll("[data-stage-preview]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeStageIndex = Number(button.dataset.stagePreview) || 0;
+      state.sessionMode = "workout";
+      render();
+      document.querySelector("#sesion").scrollIntoView({ block: "start" });
+    });
+  });
+
+  els.contentArea.querySelectorAll("[data-jump-stage]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const session = currentSession();
+      if (!session) return;
+      const index = Number(button.dataset.jumpStage) || 0;
+      state.activeStageIndex = index;
+      state.progress[session.id] = {
+        ...(state.progress[session.id] || {}),
+        stageIndex: index,
+      };
+      writeStorage(PROGRESS_KEY, state.progress);
+      render();
+    });
+  });
+
+  els.contentArea.querySelectorAll("[data-prev-stage]").forEach((button) => {
+    button.addEventListener("click", () => moveStage(button.dataset.prevStage, -1));
+  });
+
+  els.contentArea.querySelectorAll("[data-next-stage]").forEach((button) => {
+    button.addEventListener("click", () => moveStage(button.dataset.nextStage, 1));
   });
 
   els.contentArea.querySelectorAll("[data-complete]").forEach((button) => {
@@ -931,35 +1232,113 @@ function bindDynamicControls() {
   });
 }
 
-els.startDateInput.addEventListener("change", (event) => {
-  state.config.startDate = event.target.value || defaultConfig.startDate;
-  state.selectedWeek = 0;
-  state.selectedSessionId = "";
-  rebuildPlan();
+function moveStage(sessionId, direction) {
+  const session = plan.sessions.find((item) => item.id === sessionId);
+  if (!session) return;
+  const stages = stagesForSession(session);
+  const current = state.progress[sessionId] || {};
+  const currentIndex = Number.isInteger(current.stageIndex) ? current.stageIndex : state.activeStageIndex;
+  const nextIndex = currentIndex + direction;
+
+  if (nextIndex >= stages.length) {
+    state.progress[sessionId] = {
+      ...current,
+      completed: true,
+      completedAt: new Date().toISOString(),
+      stageIndex: Math.max(stages.length - 1, 0),
+    };
+  } else {
+    state.progress[sessionId] = {
+      ...current,
+      stageIndex: Math.max(nextIndex, 0),
+    };
+  }
+
+  state.activeStageIndex = state.progress[sessionId].stageIndex || 0;
+  writeStorage(PROGRESS_KEY, state.progress);
+  plan = buildPlan();
+  render();
+}
+
+els.appStepPanel.addEventListener("submit", (event) => {
+  const form = event.target.closest("[data-name-form]");
+  if (!form) return;
+  event.preventDefault();
+  const name = clean(new FormData(form).get("athleteName"));
+  if (!name) return;
+  state.profile.name = name;
+  state.profile.planStarted = false;
+  writeStorage(PROFILE_KEY, state.profile);
+  render();
 });
 
-els.frequencyControl.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-frequency]");
-  if (!button) return;
-  state.config.frequency = Number(button.dataset.frequency);
-  state.selectedWeek = 0;
-  state.selectedSessionId = "";
-  rebuildPlan();
+els.appStepPanel.addEventListener("change", (event) => {
+  if (event.target.matches("#startDateInput")) {
+    state.config.startDate = event.target.value || defaultConfig.startDate;
+    state.selectedWeek = 0;
+    state.selectedSessionId = "";
+    state.sessionMode = "preview";
+    rebuildPlan();
+  }
 });
 
-els.goalControl.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-goal]");
-  if (!button) return;
-  state.config.goal = button.dataset.goal;
-  rebuildPlan();
+els.appStepPanel.addEventListener("click", (event) => {
+  const nameButton = event.target.closest("[data-edit-name]");
+  if (nameButton) {
+    state.profile.name = "";
+    state.profile.planStarted = false;
+    writeStorage(PROFILE_KEY, state.profile);
+    render();
+    return;
+  }
+
+  const frequencyButton = event.target.closest("button[data-frequency]");
+  if (frequencyButton) {
+    state.config.frequency = Number(frequencyButton.dataset.frequency);
+    state.selectedWeek = 0;
+    state.selectedSessionId = "";
+    state.sessionMode = "preview";
+    rebuildPlan();
+    return;
+  }
+
+  const goalButton = event.target.closest("button[data-goal]");
+  if (goalButton) {
+    state.config.goal = goalButton.dataset.goal;
+    rebuildPlan();
+    return;
+  }
+
+  const startButton = event.target.closest("[data-start-plan]");
+  if (startButton) {
+    state.profile.planStarted = true;
+    writeStorage(PROFILE_KEY, state.profile);
+    rebuildPlan();
+    document.querySelector("#dashboard").scrollIntoView({ block: "start" });
+  }
 });
 
 els.weekRail.addEventListener("click", (event) => {
+  const sessionButton = event.target.closest("[data-preview-session]");
+  if (sessionButton) {
+    const session = plan.sessions.find((item) => item.id === sessionButton.dataset.previewSession);
+    if (!session) return;
+    state.selectedWeek = session.weekIndex;
+    state.selectedSessionId = session.id;
+    state.view = "plan";
+    state.sessionMode = "preview";
+    state.activeStageIndex = state.progress[session.id]?.stageIndex || 0;
+    render();
+    document.querySelector("#sesion").scrollIntoView({ block: "start" });
+    return;
+  }
+
   const button = event.target.closest("button[data-week]");
   if (!button) return;
   state.selectedWeek = Number(button.dataset.week);
   state.selectedSessionId = "";
   state.view = "plan";
+  state.sessionMode = "preview";
   render();
   document.querySelector("#sesion").scrollIntoView({ block: "start" });
 });

@@ -21,10 +21,10 @@
         </a>
 
         <nav class="nav-links" aria-label="Navegacion principal">
-          <a href="#plan">Plan</a>
-          <a href="#sesion">Sesion</a>
+          <a href="#plan">Inicio</a>
+          <a href="#dashboard">Calendario</a>
+          <a href="#sesion">Rutina</a>
           <a href="#biblioteca">Biblioteca</a>
-          <a href="#archivo">Archivo</a>
         </nav>
 
         <div class="nav-stats" id="statsPanel" aria-label="Resumen del programa"></div>
@@ -36,45 +36,30 @@
             <p class="brand-line">Cuatro Padel Performance</p>
             <h1 id="heroTitle">Entrena fuerza, potencia y movilidad con progresion para padel.</h1>
             <p class="hero-summary">
-              Configura una fecha de inicio y una frecuencia semanal. El plan ordena las rutinas FB1-FB9 como una progresion practica para jugadores que quieren moverse mejor, frenar mas estable y llegar con mas potencia a la bola.
+              Crea tu calendario, revisa cada rutina antes de comenzar y avanza por etapas: movilidad, preparacion, potencia, fuerza principal y accesorios.
             </p>
             <div class="hero-actions">
-              <a class="primary-action" href="#sesion">Abrir sesion actual</a>
+              <a class="primary-action" href="#appStepPanel">Crear mi plan</a>
               <button class="secondary-action" type="button" id="resetProgressButton">Reiniciar progreso</button>
             </div>
           </div>
 
-          <aside class="planner-panel" aria-label="Configurar plan">
-            <div class="panel-heading">
-              <span>Plan builder</span>
-              <strong id="planDurationLabel">9 semanas</strong>
-            </div>
-
-            <label class="field-label" for="startDateInput">Fecha de inicio</label>
-            <input id="startDateInput" class="date-input" type="date">
-
-            <div class="field-label">Entrenamientos por semana</div>
-            <div class="segmented-control" id="frequencyControl" role="radiogroup" aria-label="Entrenamientos por semana">
-              <button type="button" data-frequency="2">2</button>
-              <button type="button" data-frequency="3" class="is-active">3</button>
-              <button type="button" data-frequency="4">4</button>
-            </div>
-
-            <div class="field-label">Enfoque</div>
-            <div class="goal-grid" id="goalControl" role="radiogroup" aria-label="Enfoque del plan">
-              <button type="button" data-goal="padel" class="is-active">Padel completo</button>
-              <button type="button" data-goal="strength">Fuerza</button>
-              <button type="button" data-goal="knee">Rodilla</button>
-              <button type="button" data-goal="power">Potencia</button>
-            </div>
-
-            <div class="planner-summary" id="plannerSummary"></div>
-          </aside>
+          <aside class="planner-panel" id="appStepPanel" aria-label="Configurar plan"></aside>
         </section>
 
-        <section class="progress-band" id="progressBand" aria-label="Progreso del plan"></section>
-
-        <section class="week-rail" id="weekRail" aria-label="Semanas del plan"></section>
+        <section class="dashboard-board" id="dashboard" aria-label="Dashboard del plan">
+          <section class="progress-band" id="progressBand" aria-label="Progreso del plan"></section>
+          <section class="calendar-panel" aria-label="Calendario de entrenamiento">
+            <header class="calendar-header">
+              <div>
+                <span class="section-label">Calendario</span>
+                <h2>Tu progresion semana a semana</h2>
+              </div>
+              <p id="calendarSummary">Selecciona una rutina para ver el preview antes de comenzar.</p>
+            </header>
+            <div class="week-rail" id="weekRail" aria-label="Semanas del plan"></div>
+          </section>
+        </section>
 
         <section class="control-dock" id="biblioteca" aria-label="Controles de biblioteca">
           <div class="search-wrap">
