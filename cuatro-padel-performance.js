@@ -1,4 +1,4 @@
-const data = window.HARBIZ_RUTINAS_DATA || { events: [], workouts: [], stats: {} };
+const data = window.CUATRO_PERFORMANCE_DATA || { events: [], workouts: [], stats: {} };
 
 const CONFIG_KEY = "cuatro-padel-performance.config.v1";
 const PROGRESS_KEY = "cuatro-padel-performance.progress.v1";
@@ -968,12 +968,11 @@ function exerciseCard(exercise) {
         </div>
         ${notes.length ? `<p class="note-line">${escapeHtml(notes.join(" - "))}</p>` : ""}
         <details>
-          <summary>Instrucciones Harbiz</summary>
+          <summary>Instrucciones originales</summary>
           <div class="instructions">${instructions ? escapeHtml(instructions) : "Sin instrucciones adicionales en el archivo original."}</div>
         </details>
         <div class="card-actions">
           ${exercise.video_url ? `<a class="external-link" href="${escapeHtml(exercise.video_url)}" target="_blank" rel="noreferrer">${iconExternal} Video</a>` : ""}
-          ${exercise.internal_link ? `<a class="external-link" href="${escapeHtml(exercise.internal_link)}" target="_blank" rel="noreferrer">${iconExternal} Harbiz</a>` : ""}
         </div>
       </div>
     </article>
@@ -1056,7 +1055,7 @@ function renderArchiveView() {
       <header class="session-header">
         <div>
           <span class="section-label">Archivo original</span>
-          <h2>Fechas historicas y datos fuente</h2>
+          <h2>Fechas historicas y datos del programa</h2>
           <p class="archive-summary">La experiencia principal usa una progresion nueva; esta vista conserva el contexto original del scrape.</p>
           <div class="session-meta">
             <span>${events.length} eventos visibles</span>
@@ -1080,8 +1079,8 @@ function renderArchiveView() {
       <span class="section-label">Export</span>
       <h2>Archivos tecnicos</h2>
       <div class="source-actions">
-        <a class="external-link" href="./harbiz-rutinas-limpio.md">${iconExternal} Markdown limpio</a>
-        <a class="external-link" href="./harbiz-rutinas-scrape.json">${iconExternal} JSON completo</a>
+        <a class="external-link" href="./rutinas-limpias.md">${iconExternal} Markdown limpio</a>
+        <a class="external-link" href="./rutinas-completas.json">${iconExternal} JSON completo</a>
       </div>
     </section>
   `;
