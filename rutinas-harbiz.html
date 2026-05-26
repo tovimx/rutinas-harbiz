@@ -4,46 +4,91 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
-    <title>Rutinas Padel | Archivo Semanal Harbiz</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%237cf249'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-size='12' font-family='Arial' font-weight='700' fill='%23071006'%3ERP%3C/text%3E%3C/svg%3E">
+    <title>Cuatro Padel Performance</title>
+    <meta name="description" content="Plan de fuerza, movilidad y potencia para jugadores de padel.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2322c55e'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-size='13' font-family='Arial' font-weight='900' fill='%23022c22'%3E4P%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="./rutinas-harbiz.css">
   </head>
   <body>
     <div class="site-shell">
       <header class="site-nav">
-        <a class="brand" href="#top" aria-label="Rutinas Padel">
-          <span class="brand-mark" aria-hidden="true">RP</span>
+        <a class="brand" href="#top" aria-label="Cuatro Padel Performance">
+          <span class="brand-mark" aria-hidden="true">4P</span>
           <span>
-            <span class="brand-label">Archivo Harbiz</span>
-            <strong>Rutinas Padel</strong>
+            <span class="brand-label">Side project de Cuatro</span>
+            <strong>Cuatro Padel Performance</strong>
           </span>
         </a>
 
         <nav class="nav-links" aria-label="Navegacion principal">
-          <a href="#semanas">Semanas</a>
-          <a href="#rutina">Rutina</a>
+          <a href="#plan">Plan</a>
+          <a href="#sesion">Sesion</a>
           <a href="#biblioteca">Biblioteca</a>
+          <a href="#archivo">Archivo</a>
         </nav>
 
-        <div class="nav-stats" id="statsPanel" aria-label="Resumen del archivo"></div>
+        <div class="nav-stats" id="statsPanel" aria-label="Resumen del programa"></div>
       </header>
 
       <main id="top">
-        <section class="week-hero" id="weekHero" aria-live="polite"></section>
+        <section class="performance-hero" id="plan" aria-labelledby="heroTitle">
+          <div class="hero-copy">
+            <p class="brand-line">Cuatro Padel Performance</p>
+            <h1 id="heroTitle">Entrena fuerza, potencia y movilidad con progresion para padel.</h1>
+            <p class="hero-summary">
+              Configura una fecha de inicio y una frecuencia semanal. El plan ordena las rutinas FB1-FB9 como una progresion practica para jugadores que quieren moverse mejor, frenar mas estable y llegar con mas potencia a la bola.
+            </p>
+            <div class="hero-actions">
+              <a class="primary-action" href="#sesion">Abrir sesion actual</a>
+              <button class="secondary-action" type="button" id="resetProgressButton">Reiniciar progreso</button>
+            </div>
+          </div>
 
-        <section class="control-dock" aria-label="Controles de rutina">
+          <aside class="planner-panel" aria-label="Configurar plan">
+            <div class="panel-heading">
+              <span>Plan builder</span>
+              <strong id="planDurationLabel">9 semanas</strong>
+            </div>
+
+            <label class="field-label" for="startDateInput">Fecha de inicio</label>
+            <input id="startDateInput" class="date-input" type="date">
+
+            <div class="field-label">Entrenamientos por semana</div>
+            <div class="segmented-control" id="frequencyControl" role="radiogroup" aria-label="Entrenamientos por semana">
+              <button type="button" data-frequency="2">2</button>
+              <button type="button" data-frequency="3" class="is-active">3</button>
+              <button type="button" data-frequency="4">4</button>
+            </div>
+
+            <div class="field-label">Objetivo</div>
+            <div class="goal-grid" id="goalControl" role="radiogroup" aria-label="Objetivo del plan">
+              <button type="button" data-goal="padel" class="is-active">Padel completo</button>
+              <button type="button" data-goal="strength">Fuerza</button>
+              <button type="button" data-goal="knee">Rodilla</button>
+              <button type="button" data-goal="power">Potencia</button>
+            </div>
+
+            <div class="planner-summary" id="plannerSummary"></div>
+          </aside>
+        </section>
+
+        <section class="progress-band" id="progressBand" aria-label="Progreso del plan"></section>
+
+        <section class="week-rail" id="weekRail" aria-label="Semanas del plan"></section>
+
+        <section class="control-dock" id="biblioteca" aria-label="Controles de biblioteca">
           <div class="search-wrap">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m21 21-4.35-4.35m1.35-5.15a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"></path>
             </svg>
-            <input id="searchInput" type="search" autocomplete="off" placeholder="Buscar ejercicios, bloques, instrucciones o videos...">
+            <input id="searchInput" type="search" autocomplete="off" placeholder="Buscar ejercicios, beneficios, equipo o videos">
           </div>
 
           <div class="view-tabs" role="tablist" aria-label="Vistas">
-            <button class="tab-button is-active" type="button" data-view="week">Semana</button>
-            <button class="tab-button" type="button" data-view="all">Todo</button>
+            <button class="tab-button is-active" type="button" data-view="plan">Plan</button>
+            <button class="tab-button" type="button" data-view="library">Biblioteca</button>
             <button class="tab-button" type="button" data-view="videos">Videos</button>
-            <button class="tab-button" type="button" data-view="text">Texto</button>
+            <button class="tab-button" type="button" data-view="archive">Archivo</button>
           </div>
 
           <button class="icon-action" type="button" id="printButton" aria-label="Imprimir o guardar PDF">
@@ -53,18 +98,27 @@
           </button>
         </section>
 
-        <section class="week-tabs" id="semanas" aria-label="Semanas disponibles"></section>
-        <section class="day-tabs" id="dayTabs" aria-label="Dias de la semana seleccionada"></section>
-
-        <section class="filter-band" id="biblioteca" aria-label="Filtros por bloque">
+        <section class="filter-band" aria-label="Filtros por bloque">
           <div>
             <span class="filter-label">Bloques</span>
-            <p>Filtra la semana actual o la biblioteca completa.</p>
+            <p>Filtra la sesion actual o la biblioteca completa.</p>
           </div>
           <div class="block-chips" id="blockFilters"></div>
         </section>
 
-        <section class="content-area" id="rutina" aria-live="polite"></section>
+        <section class="content-area" id="sesion" aria-live="polite"></section>
+
+        <section class="source-strip" id="archivo">
+          <div>
+            <span class="section-label">Fuente original</span>
+            <h2>Archivo tecnico y datos limpios</h2>
+          </div>
+          <div class="source-actions">
+            <a class="external-link" href="./harbiz-rutinas-limpio.md">Markdown limpio</a>
+            <a class="external-link" href="./harbiz-rutinas-scrape.json">JSON completo</a>
+            <a class="external-link" href="https://github.com/tovimx/rutinas-harbiz" target="_blank" rel="noreferrer">Repo</a>
+          </div>
+        </section>
       </main>
     </div>
 
