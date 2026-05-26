@@ -13,6 +13,7 @@ const defaultConfig = {
 const defaultProfile = {
   name: "",
   planStarted: false,
+  introStarted: false,
 };
 
 const state = {
@@ -42,7 +43,7 @@ const els = {
   contentArea: document.querySelector("#sesion"),
   sourceStrip: document.querySelector("#archivo"),
   printButton: document.querySelector("#printButton"),
-  resetProgressButton: document.querySelector("#resetProgressButton"),
+  beginOnboardingButton: document.querySelector("#beginOnboardingButton"),
   viewTabs: document.querySelectorAll(".tab-button"),
 };
 
@@ -502,6 +503,11 @@ function renderPlanner() {
   const duration = plan.weeks.length;
   const goal = goalProfiles[state.config.goal] || goalProfiles.padel;
 
+  if (!state.profile.name && !state.profile.introStarted) {
+    els.appStepPanel.innerHTML = "";
+    return;
+  }
+
   if (!state.profile.name) {
     els.appStepPanel.innerHTML = `
       <form class="onboarding-form" data-name-form>
@@ -563,6 +569,7 @@ function renderPlanner() {
     <button class="primary-action setup-submit" type="button" data-start-plan>
       ${state.profile.planStarted ? "Actualizar calendario" : "Crear mi calendario"}
     </button>
+    ${state.profile.planStarted ? `<button class="secondary-action" type="button" data-reset-progress>Reiniciar progreso</button>` : ""}
   `;
 }
 
@@ -1119,6 +1126,9 @@ function isPlanReady() {
 
 function syncAppVisibility() {
   const ready = isPlanReady();
+  const introOnly = !state.profile.name && !state.profile.introStarted;
+  document.body.classList.toggle("is-intro-only", introOnly);
+  if (els.appStepPanel) els.appStepPanel.hidden = introOnly;
   [els.dashboardBoard, els.controlDock, els.filterBand, els.contentArea, els.sourceStrip].forEach((element) => {
     if (element) element.hidden = !ready;
   });
@@ -1267,6 +1277,7 @@ els.appStepPanel.addEventListener("submit", (event) => {
   const name = clean(new FormData(form).get("athleteName"));
   if (!name) return;
   state.profile.name = name;
+  state.profile.introStarted = true;
   state.profile.planStarted = false;
   writeStorage(PROFILE_KEY, state.profile);
   render();
@@ -1287,6 +1298,7 @@ els.appStepPanel.addEventListener("click", (event) => {
   if (nameButton) {
     state.profile.name = "";
     state.profile.planStarted = false;
+    state.profile.introStarted = true;
     writeStorage(PROFILE_KEY, state.profile);
     render();
     return;
@@ -1312,9 +1324,20 @@ els.appStepPanel.addEventListener("click", (event) => {
   const startButton = event.target.closest("[data-start-plan]");
   if (startButton) {
     state.profile.planStarted = true;
+    state.profile.introStarted = true;
     writeStorage(PROFILE_KEY, state.profile);
     rebuildPlan();
     document.querySelector("#dashboard").scrollIntoView({ block: "start" });
+    return;
+  }
+
+  const resetButton = event.target.closest("[data-reset-progress]");
+  if (resetButton) {
+    if (!confirm("Reiniciar progreso local de Cuatro Padel Performance?")) return;
+    state.progress = {};
+    writeStorage(PROGRESS_KEY, state.progress);
+    plan = buildPlan();
+    render();
   }
 });
 
@@ -1365,12 +1388,16 @@ els.viewTabs.forEach((button) => {
   });
 });
 
-els.resetProgressButton.addEventListener("click", () => {
-  if (!confirm("Reiniciar progreso local de Cuatro Padel Performance?")) return;
-  state.progress = {};
-  writeStorage(PROGRESS_KEY, state.progress);
-  plan = buildPlan();
-  render();
+els.beginOnboardingButton.addEventListener("click", () => {
+  if (!state.profile.name) {
+    state.profile.introStarted = true;
+    writeStorage(PROFILE_KEY, state.profile);
+    render();
+    document.querySelector("#appStepPanel").scrollIntoView({ block: "start" });
+    return;
+  }
+
+  document.querySelector(isPlanReady() ? "#dashboard" : "#appStepPanel").scrollIntoView({ block: "start" });
 });
 
 els.printButton.addEventListener("click", () => window.print());

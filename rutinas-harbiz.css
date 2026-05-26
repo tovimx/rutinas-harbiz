@@ -216,6 +216,22 @@ svg {
   padding: 30px 0 18px;
 }
 
+.is-intro-only .performance-hero {
+  grid-template-columns: minmax(0, 920px);
+  justify-content: center;
+  padding-top: 46px;
+}
+
+.is-intro-only .hero-copy {
+  min-height: 560px;
+}
+
+.hero-start {
+  min-width: 220px;
+  min-height: 58px;
+  font-size: 16px;
+}
+
 .hero-copy,
 .planner-panel,
 .progress-band,
