@@ -101,8 +101,8 @@ svg {
   z-index: 30;
   top: 0;
   display: grid;
-  grid-template-columns: auto minmax(280px, 1fr) auto;
-  gap: 22px;
+  grid-template-columns: minmax(260px, 1fr) auto minmax(410px, 1fr);
+  gap: 20px;
   align-items: center;
   min-height: 78px;
   padding: 14px 0;
@@ -184,28 +184,48 @@ svg {
 }
 
 .nav-stats {
+  justify-self: end;
   display: grid;
-  grid-template-columns: repeat(4, auto);
+  grid-template-columns: repeat(4, minmax(104px, 1fr));
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
+  width: min(100%, 468px);
 }
 
-.nav-stats span {
-  display: inline-flex;
-  gap: 5px;
-  align-items: baseline;
-  min-height: 34px;
-  padding: 0 10px;
+.nav-stats .metric-pill {
+  display: grid;
+  grid-template-columns: auto minmax(0, max-content);
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(187, 247, 208, 0.12);
   border-radius: var(--radius);
   color: var(--muted);
-  background: rgba(240, 253, 244, 0.075);
+  background:
+    linear-gradient(180deg, rgba(240, 253, 244, 0.11), rgba(240, 253, 244, 0.055)),
+    rgba(2, 44, 34, 0.64);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
   font-size: 12px;
   font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .nav-stats strong {
   color: var(--text);
-  font-size: 16px;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.nav-stats em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1;
 }
 
 .performance-hero {
@@ -1240,7 +1260,13 @@ summary {
   }
 
   .nav-stats {
+    justify-self: stretch;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .nav-stats .metric-pill {
+    justify-content: start;
   }
 
   .routine-education,

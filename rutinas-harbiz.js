@@ -492,10 +492,10 @@ function applyFilters(exercises) {
 
 function renderStats() {
   els.statsPanel.innerHTML = `
-    <span><strong>${programWorkouts.length}</strong> sesiones</span>
-    <span><strong>${plan.weeks.length}</strong> semanas</span>
-    <span><strong>${uniqueExercises.length}</strong> ejercicios</span>
-    <span><strong>${uniqueVideos.length}</strong> videos</span>
+    <span class="metric-pill"><strong>${programWorkouts.length}</strong><em>sesiones</em></span>
+    <span class="metric-pill"><strong>${plan.weeks.length}</strong><em>semanas</em></span>
+    <span class="metric-pill"><strong>${uniqueExercises.length}</strong><em>ejercicios</em></span>
+    <span class="metric-pill"><strong>${uniqueVideos.length}</strong><em>videos</em></span>
   `;
 }
 
