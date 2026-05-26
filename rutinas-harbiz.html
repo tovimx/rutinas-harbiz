@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Rutinas Padel | Archivo Semanal Harbiz</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%237cf249'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-size='12' font-family='Arial' font-weight='700' fill='%23071006'%3ERP%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./rutinas-harbiz.css">
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-nav">
+        <a class="brand" href="#top" aria-label="Rutinas Padel">
+          <span class="brand-mark" aria-hidden="true">RP</span>
+          <span>
+            <span class="brand-label">Archivo Harbiz</span>
+            <strong>Rutinas Padel</strong>
+          </span>
+        </a>
+
+        <nav class="nav-links" aria-label="Navegacion principal">
+          <a href="#semanas">Semanas</a>
+          <a href="#rutina">Rutina</a>
+          <a href="#biblioteca">Biblioteca</a>
+        </nav>
+
+        <div class="nav-stats" id="statsPanel" aria-label="Resumen del archivo"></div>
+      </header>
+
+      <main id="top">
+        <section class="week-hero" id="weekHero" aria-live="polite"></section>
+
+        <section class="control-dock" aria-label="Controles de rutina">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m21 21-4.35-4.35m1.35-5.15a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z"></path>
+            </svg>
+            <input id="searchInput" type="search" autocomplete="off" placeholder="Buscar ejercicios, bloques, instrucciones o videos...">
+          </div>
+
+          <div class="view-tabs" role="tablist" aria-label="Vistas">
+            <button class="tab-button is-active" type="button" data-view="week">Semana</button>
+            <button class="tab-button" type="button" data-view="all">Todo</button>
+            <button class="tab-button" type="button" data-view="videos">Videos</button>
+            <button class="tab-button" type="button" data-view="text">Texto</button>
+          </div>
+
+          <button class="icon-action" type="button" id="printButton" aria-label="Imprimir o guardar PDF">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9V3h12v6M6 17H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M6 14h12v7H6v-7Z"></path>
+            </svg>
+          </button>
+        </section>
+
+        <section class="week-tabs" id="semanas" aria-label="Semanas disponibles"></section>
+        <section class="day-tabs" id="dayTabs" aria-label="Dias de la semana seleccionada"></section>
+
+        <section class="filter-band" id="biblioteca" aria-label="Filtros por bloque">
+          <div>
+            <span class="filter-label">Bloques</span>
+            <p>Filtra la semana actual o la biblioteca completa.</p>
+          </div>
+          <div class="block-chips" id="blockFilters"></div>
+        </section>
+
+        <section class="content-area" id="rutina" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <script src="./rutinas-data.js"></script>
+    <script src="./rutinas-harbiz.js"></script>
+  </body>
+</html>
