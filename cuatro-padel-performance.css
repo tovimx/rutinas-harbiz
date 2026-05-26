@@ -194,12 +194,13 @@ svg {
 
 .nav-stats .metric-pill {
   display: grid;
-  grid-template-columns: auto minmax(0, max-content);
-  gap: 6px;
-  align-items: center;
+  gap: 4px;
+  align-content: center;
+  justify-items: center;
   justify-content: center;
   min-height: 44px;
-  padding: 0 12px;
+  min-width: 0;
+  padding: 8px 10px;
   border: 1px solid rgba(187, 247, 208, 0.12);
   border-radius: var(--radius);
   color: var(--muted);
@@ -210,7 +211,8 @@ svg {
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
-  white-space: nowrap;
+  overflow: hidden;
+  text-align: center;
 }
 
 .nav-stats strong {
@@ -221,11 +223,16 @@ svg {
 }
 
 .nav-stats em {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--muted);
   font-size: 12px;
   font-style: normal;
   font-weight: 850;
   line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .performance-hero {
@@ -1266,7 +1273,7 @@ summary {
   }
 
   .nav-stats .metric-pill {
-    justify-content: start;
+    justify-content: center;
   }
 
   .routine-education,
