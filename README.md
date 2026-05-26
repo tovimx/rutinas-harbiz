@@ -1,6 +1,6 @@
 # Cuatro Padel Performance
 
-Sitio estatico para convertir las rutinas extraidas de Harbiz en un plan flexible para jugadores de padel. El usuario puede elegir fecha de inicio, frecuencia semanal, objetivo principal y consultar cada sesion con una capa didactica de rutina y ejercicio.
+Sitio estatico para convertir las rutinas extraidas de Harbiz en un plan flexible para jugadores de padel. El usuario puede elegir fecha de inicio, frecuencia semanal, enfoque de entrenamiento y consultar cada sesion con una capa didactica de rutina y ejercicio.
 
 ## Archivos principales
 

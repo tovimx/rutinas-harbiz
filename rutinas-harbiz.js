@@ -351,7 +351,7 @@ function routineInsight(workout, session) {
   return [
     { label: "Mejora", value: improves },
     { label: "Padel", value: padel },
-    { label: "Objetivo", value: goal.focus },
+    { label: "Enfoque", value: goal.focus },
     { label: "Carga", value: `${session.phase.load} - ${session.phase.name}` },
     { label: "Equipo", value: equipment || "peso corporal y material basico" },
     { label: "Foco", value: caution },
@@ -502,8 +502,8 @@ function renderPlanner() {
   els.plannerSummary.innerHTML = `
     <div class="summary-row"><span>Inicio</span><strong>${escapeHtml(formatLongDate(plan.start))}</strong></div>
     <div class="summary-row"><span>Frecuencia</span><strong>${state.config.frequency} sesiones/semana</strong></div>
-    <div class="summary-row"><span>Objetivo</span><strong>${escapeHtml(goal.label)}</strong></div>
-    <div class="summary-row"><span>Enfoque</span><strong>${escapeHtml(goal.cue)}</strong></div>
+    <div class="summary-row"><span>Enfoque</span><strong>${escapeHtml(goal.label)}</strong></div>
+    <div class="summary-row"><span>Guia</span><strong>${escapeHtml(goal.cue)}</strong></div>
   `;
 }
 
